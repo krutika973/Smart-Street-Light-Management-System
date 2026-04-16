@@ -1,0 +1,95 @@
+//Code Part
+module street_light_controller(
+  input wire clk,
+  input wire reset, 
+  input wire light_sensor,
+  output reg street_light);
+  parameter DAY=2'b00;
+  parameter NIGHT=2'b01;
+  reg[1:0] current_state;
+  reg[1:0] next_state;
+  always@(*)begin
+    case(current_state)
+      DAY:begin
+        if(light_sensor==1)
+          next_state=NIGHT;
+        else
+          next_state=DAY;
+      end
+      NIGHT:begin
+          if(light_sensor==0)
+            next_state=DAY;
+          else
+            next_state=NIGHT;
+        end
+        default:begin
+          next_state=DAY;
+        end
+        endcase
+      end
+      always@(posedge clk or posedge reset)begin
+        if(reset)begin
+          current_state<=DAY;
+        end else begin
+          current_state<=next_state;
+        end 
+      end
+      always@(posedge clk or posedge reset)begin
+        if(reset)begin
+          street_light<=0;
+        end else begin
+          case(current_state)
+            DAY:begin
+              street_light<=0;
+            end
+            NIGHT:begin
+              street_light<=1;
+            end
+            default:begin
+              street_light<=0;
+            end
+          endcase
+        end
+      end
+      endmodule
+
+//Test Bench
+module tb_top;
+  reg clk,reset,light_sensor;
+  wire street_light;
+  street_light_controller dut(
+    .clk(clk),
+    .reset(reset),
+    .light_sensor(light_sensor),
+    .street_light(street_light)
+    );
+    initial begin
+      clk=0;
+      light_sensor=0;
+      reset=1;
+    end
+    always begin
+      #10 clk=~clk;
+    end
+    initial begin
+      #50 reset=0;
+      #20;
+      light_sensor=0;
+      //#4s;
+      #40;
+      if(street_light !==0);
+        light_sensor=1;
+      //#5s
+      #40;
+      if(street_light !==1);
+        #500;
+        $finish;
+    end
+  initial begin
+    $dumpfile("dump.vcd");
+    $dumpvars();
+  end
+endmodule
+
+
+      
